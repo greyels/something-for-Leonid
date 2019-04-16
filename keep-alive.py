@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# ./keep-alive.py remote_address timeout local_port1 local_port2 local_portN
+# ./keep-alive.py remote_address timeout rem_port local_port1 local_port2 local_portN
 # количество локальных портов на которых мы открываем сокет - переменное
 # timeout - задержка между пакетами
 # с каждого сокета мы посылаем
@@ -18,30 +18,31 @@ from threading import Thread
 DATA = "0x0D 0x0A 0x0D 0x0A"
 
 def parse_input(argv):
-    rem_ip, timeout = argv[1], int(argv[2])
+    rem_ip, timeout, rem_port = argv[1], int(argv[2]), int(argv[3])
     local_ports = []
-    for arg in argv[3:]:
+    for arg in argv[4:]:
         local_ports.append(int(arg))
-    return rem_ip, timeout, local_ports
+    return rem_ip, timeout, rem_port, local_ports
 
-def send_data(sock, rem_ip, timeout, port):
+def send_data(rem_ip, timeout, rem_port, local_port):
+    # create UDP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # bind socket to a local port
+    sock.bind(('', local_port))
     while True:
-        sock.sendto(bytes(DATA, "utf-8"), (rem_ip, port))
-        print("Packet is sent to " + rem_ip + " at " + str(datetime.now()) + " (UDP port: " + str(port) + ")")
+        sock.sendto(bytes(DATA, "utf-8"), (rem_ip, rem_port))
+        print("Packet is sent to " + rem_ip + ":" + str(rem_port) + " at " + str(datetime.now()) + " (from UDP port: " + str(local_port) + ")")
         time.sleep(timeout)
-    return 0
 
 def main():
     argv = sys.argv
     try:
-        assert len(argv) >= 4, "Script usage: " + __file__ + " remote_address timeout local_port1 local_port2 ... local_portN"
+        assert len(argv) >= 5, "Script usage: " + __file__ + " remote_ip timeout remote_port local_port1 local_port2 ... local_portN"
         # get remote_address, timeout and local_ports from script arguments
-        rem_ip, timeout, local_ports = parse_input(sys.argv)
-        # create a socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        rem_ip, timeout, rem_port, local_ports = parse_input(sys.argv)
         # create a thread for every local port in the list
-        for port in local_ports:
-            Thread(target=send_data, args=(sock, rem_ip, timeout, port)).start()
+        for local_port in local_ports:
+            Thread(target=send_data, args=(rem_ip, timeout, rem_port, local_port)).start()
     except (AssertionError) as e:
         print(e)
         return 1
