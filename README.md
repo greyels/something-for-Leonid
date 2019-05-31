@@ -1,1 +1,1 @@
-# Scripts to test the feature (sockets, multithreading)
+# Keep-alive scripts to test the feature
