@@ -1,1 +1,1 @@
-# something-for-Leonid
+# Scripts to test the feature (sockets, multithreading)
